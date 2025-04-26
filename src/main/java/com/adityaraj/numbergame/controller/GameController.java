@@ -1,71 +1,63 @@
-package com.numbergame.controller;
+package com.aditya.numbergame;
 
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Random;
 
 @RestController
 @RequestMapping("/api/game")
-@CrossOrigin
+@CrossOrigin(origins = "*")
 public class GameController {
 
-    private int numberToGuess;
+    private int target;
     private int attemptsLeft;
+    private static final int MAX_ATTEMPTS = 5;
     private boolean gameOver;
 
     public GameController() {
-        startNewGame();
+        reset();
+    }
+
+    private void reset() {
+        this.target = new Random().nextInt(99) + 1;
+        this.attemptsLeft = MAX_ATTEMPTS;
+        this.gameOver = false;
     }
 
     @GetMapping("/start")
-    public String startGame() {
-        startNewGame();
+    public String start() {
+        reset();
         return "✅ New game started! Guess a number between 1 and 99.";
     }
 
     @PostMapping("/guess")
-    public String submitGuess(@RequestParam int number) {
+    public String guess(@RequestParam int number) {
         if (gameOver) {
-            return "❌ Game over! Please start a new game.";
+            return "❌ Game over! Please /start a new game.";
         }
-
         if (number < 1 || number > 99) {
-            return "⚠️ Please guess a number between 1 and 99.";
+            return "⚠️ Number must be between 1 and 99.";
         }
-
         attemptsLeft--;
 
-        if (number == numberToGuess) {
+        if (number == target) {
             gameOver = true;
-            return "🎉 Correct! You guessed the number!";
-        } else {
-            String hint = generateHint(number);
-
-            if (attemptsLeft == 0) {
-                gameOver = true;
-                return hint + " ❌ Game over! The correct number was " + numberToGuess + ".";
-            }
-
-            return hint + " Attempts left: " + attemptsLeft;
+            return "🎉 Correct! You got it in " + (MAX_ATTEMPTS - attemptsLeft) + " attempts.";
         }
-    }
-
-    private void startNewGame() {
-        Random random = new Random();
-        numberToGuess = random.nextInt(99) + 1;
-        attemptsLeft = 5;
-        gameOver = false;
-    }
-
-    private String generateHint(int guess) {
-        int difference = Math.abs(guess - numberToGuess);
-        if (guess > numberToGuess) {
-            if (difference <= 10) return "🔴 You're very close! A little lower!";
-            else if (difference <= 30) return "🔴 You're high!";
-            else return "🔴 You're too high!";
+        String hint;
+        int diff = Math.abs(number - target);
+        if (diff <= 10) {
+            hint = number > target ? "🔴 Very close! A little lower." : "🔵 Very close! A little higher.";
+        } else if (diff <= 30) {
+            hint = number > target ? "🔴 A bit high." : "🔵 A bit low.";
         } else {
-            if (difference <= 10) return "🔵 You're very close! A little higher!";
-            else if (difference <= 30) return "🔵 You're low!";
-            else return "🔵 You're too low!";
+            hint = number > target ? "🔴 Too high." : "🔵 Too low.";
         }
+
+        if (attemptsLeft == 0) {
+            gameOver = true;
+            return hint + " ❌ Game over! The number was " + target + ".";
+        }
+        return hint + " (Attempts left: " + attemptsLeft + ")";
     }
 }
