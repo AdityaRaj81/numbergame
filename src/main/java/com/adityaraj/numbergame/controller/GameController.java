@@ -5,11 +5,12 @@ import java.util.Random;
 
 @RestController
 @RequestMapping("/api/game")
-@CrossOrigin(origins = "*")  // VERY IMPORTANT for frontend communication
+@CrossOrigin(origins = "*")  // Allow frontend to call
 public class GameController {
 
     private int targetNumber;
     private int attemptCount;
+    private final int maxAttempts = 5;
 
     public GameController() {
         generateRandomNumber();
@@ -17,27 +18,47 @@ public class GameController {
 
     private void generateRandomNumber() {
         Random random = new Random();
-        targetNumber = random.nextInt(100) + 1;  // Random number between 1 and 100
+        targetNumber = random.nextInt(99) + 1; // 1 to 99
         attemptCount = 0;
     }
 
     @PostMapping("/guess")
     public String guessNumber(@RequestParam int number) {
-        attemptCount++;
-        if (number == targetNumber) {
-            String result = "🎉 Correct! You guessed the number in " + attemptCount + " attempts.";
-            generateRandomNumber(); // Reset game after correct guess
-            return result;
-        } else if (number < targetNumber) {
-            return "Too low! Try a higher number.";
-        } else {
-            return "Too high! Try a lower number.";
+        if (attemptCount >= maxAttempts) {
+            int answer = targetNumber;
+            generateRandomNumber();
+            return "❌ Attempts over! The correct number was " + answer + ". New game started.";
         }
+
+        attemptCount++;
+
+        int difference = Math.abs(number - targetNumber);
+        String hint = "";
+
+        if (difference == 0) {
+            String result = "🎉 Correct! You guessed the number in " + attemptCount + " attempts!";
+            generateRandomNumber();
+            return result;
+        } else if (difference <= 10) {
+            hint = (number < targetNumber) ? "You're very close! A little higher!" : "You're very close! A little lower!";
+        } else if (difference <= 30) {
+            hint = (number < targetNumber) ? "You're high!" : "You're low!";
+        } else {
+            hint = (number < targetNumber) ? "You're too low!" : "You're too high!";
+        }
+
+        if (attemptCount == maxAttempts) {
+            int answer = targetNumber;
+            generateRandomNumber();
+            return "❌ Attempts over! The correct number was " + answer + ". New game started.";
+        }
+
+        return hint + " Attempts left: " + (maxAttempts - attemptCount);
     }
 
-    @GetMapping("/start")
+    @GetMapping("/restart")
     public String startNewGame() {
         generateRandomNumber();
-        return "New game started! Guess a number between 1 and 100.";
+        return "🔄 New game started! Guess a number between 1 and 99.";
     }
 }
