@@ -48,6 +48,7 @@ public class GameController {
         }
     }
 
+
     @GetMapping("/start")
     public String startNewGame() {
         generateRandomNumber();
